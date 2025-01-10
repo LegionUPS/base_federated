@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pruebas con Base de Datos Federada</title>
+</head>
+<body>
+  <h1>Enviar Imagen al Servidor Principal</h1>
+  <form id="imageForm">
+    <label for="imageInput">Selecciona una imagen:</label>
+    <input type="file" id="imageInput" accept="image/*" required />
+    <button type="submit">Enviar Imagen</button>
+  </form>
+  <div id="result">
+    <!-- Aquí se mostrarán los resultados -->
+  </div>
+
+  <script>
+    const form = document.getElementById('imageForm');
+    const resultDiv = document.getElementById('result');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const imageInput = document.getElementById('imageInput').files[0];
+
+      if (!imageInput) {
+        alert('Por favor, selecciona una imagen.');
+        return;
+      }
+
+      // Crear un objeto FormData para enviar la imagen
+      const formData = new FormData();
+      formData.append('file', imageInput);
+
+      try {
+        // Enviar la imagen al servidor Flask
+        const response = await fetch('http://<172.17.11.227>:5000/predict', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error('Error en la solicitud al servidor');
+        }
+
+        // Obtener los datos del servidor
+        const data = await response.json();
+
+        // Mostrar el resultado en la página
+        const predictedClass = data.predicted_class || 'Clase desconocida';
+        const debugInfo = data.debug_info || [];
+
+        resultDiv.innerHTML = `
+          <h2>Clase Predicha: ${predictedClass}</h2>
+          <h3>Resultados del Servidor:</h3>
+          <ul>
+            ${debugInfo.map(info => `<li>${info}</li>`).join('')}
+          </ul>
+        `;
+      } catch (error) {
+        console.error('Error:', error);
+        resultDiv.innerHTML = '<p>Ocurrió un error al procesar la imagen.</p>';
+      }
+    });
+  </script>
+</body>
+</html>
